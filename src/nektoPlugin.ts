@@ -111,6 +111,15 @@ export class NektoPlugin {
             }
         }
     }
+
+    private updateTyping() {
+        const isTyping = isUserTyping();
+
+        if (this.isUserTyping !== isTyping) {
+            this.isUserTyping = isTyping;
+            this.onUserTyping.emit(isTyping);
+        }
+    }
     
     private init() {
         this.onStateChanged.on(({ prev, curr }) => {
@@ -119,6 +128,7 @@ export class NektoPlugin {
         })
 
         const update = ()=> {
+            this.updateTyping();
             this.updateStatus();
             this.updateMessages();
 
@@ -132,8 +142,11 @@ export class NektoPlugin {
     updateTime     = 1000 as number | null;
     state          = { status: null } as ChatState;
     messages       = [] as { text: string, self: boolean }[];
-    onNewMessage   = new Event<{ text: string, self: boolean }>();
+    isUserTyping   = false;
+
     onStateChanged = new Event<{ prev: ChatStatus, curr: ChatStatus }>();
+    onNewMessage   = new Event<{ text: string, self: boolean }>();
+    onUserTyping   = new Event<boolean>();
     
     constructor() {
         this.init();
@@ -250,4 +263,12 @@ function getStatus() {
     }
 
     return null;
+}
+function isUserTyping() {
+    const marker = document.querySelector<HTMLElement>(".window_chat_dialog_write span");
+
+    if (marker === null)
+        return false;
+
+    return marker.style.visibility !== "hidden";
 }
