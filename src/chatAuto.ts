@@ -1,0 +1,173 @@
+import { NektoPlugin } from "./nektoPlugin";
+import { ChatTree    } from "./chatTree";
+import { Event       } from './event';
+
+
+export class AutoChat {
+    private sendMessage() {
+        if (!this.automated) {
+            this.running = false;
+            this.onStopped.emit();
+            return;
+        }
+        
+        const candidates = this.tree.nextNodes.filter(c => c.self);
+
+        if (candidates.length === 0) {
+            this.running = false;
+            this.onStopped.emit();
+            return;
+        }
+
+        const text = weightedDecide(candidates.map(c => [c.text, c.hits]));
+
+        if (this.plugin.state.status === "in-active-chat")
+            this.plugin.state.sendMessage(text);
+    }
+    private waitForMessage() {
+        const minWaitLimit =  2_000;
+        const maxWaitLimit = 10_000;
+
+        let   status    = "waiting" as "waiting" | "user-answered" | "user-inactive" | "typing-timeout";
+        let   pauseTime = Date.now();
+        const startTime = Date.now();
+        
+        const finish = () => {
+            this.plugin.onUserTyping.off(stopTyping);
+            this.plugin.onNewMessage.off(getMessage);
+            clearInterval(interval);
+
+            if (status !== "user-answered")
+                this.sendMessage();
+        };
+        const stopTyping = (typing: boolean) => {
+            if (!typing)
+                pauseTime = Date.now();
+        };
+        const getMessage = ({ self }: { self: boolean, text: string }) => {
+            if (!self)
+                status = "user-answered";
+        };
+        
+        this.plugin.onUserTyping.on(stopTyping);
+        this.plugin.onNewMessage.on(getMessage);
+
+        const interval = setInterval(() => {
+            if (Date.now() - startTime > maxWaitLimit)
+                status = "typing-timeout";
+            if (!this.plugin.isUserTyping && Date.now() - pauseTime > minWaitLimit)
+                status = "user-inactive";
+
+            if (status !== "waiting")
+                finish();
+        }, 100);
+    }
+    private nextAction() {
+        if (!this.automated) {
+            this.running = false;
+            this.onStopped.emit();
+            return;
+        }
+
+        const currentNode = this.tree.currentNode;
+        const candidates  = this.tree.nextNodes;
+
+        if (candidates.length === 0) {
+            this.running = false;
+            this.onStopped.emit();
+            return;
+        }
+
+        // dead-end branch - exit from chat
+        if (decide(currentNode.deads / currentNode.hits)) {
+            if (this.plugin.state.status === "in-active-chat")
+                this.plugin.state.exitChat();
+            return;
+        }
+
+        const waitingHits = candidates.filter(c => !c.self).reduce((a, b) => a + b.hits, 0);
+        const messageHits = candidates.filter(c =>  c.self).reduce((a, b) => a + b.hits, 0);
+
+        // should be impossible
+        if (waitingHits + messageHits === 0) {
+            this.running = false;
+            this.onStopped.emit();
+            return;
+        }
+
+        if (decide(waitingHits / (waitingHits + messageHits))) {
+            this.waitForMessage();
+            return;
+        }
+
+        this.sendMessage();
+    }
+
+    /** Is in automated mode now */
+    private running = false;
+
+    // user settings
+    private capturing = true;
+    private automated = false;
+
+    private plugin : NektoPlugin;
+    
+
+    tree      : ChatTree;
+    maxDepth  = 5;
+    onStopped = new Event();
+
+    constructor(profile: string, plugin: NektoPlugin) {
+        this.tree   = new ChatTree(profile);
+        this.plugin = plugin;
+
+        plugin.onStateChanged.on(({ prev, curr }) => {
+            if (prev !== "chat-end-confirmation" && curr === "in-active-chat")
+                this.tree.reset();
+            if (curr === "chat-finished-by-self" && this.capturing && !this.running)
+                this.tree.currentNode.deads++;
+        });
+        plugin.onNewMessage.on(({ text, self }) => {
+            this.tree.moveNext(text, self);
+
+            if (this.capturing && !this.running)
+                this.tree.currentNode.hits++;
+            if (this.automated)
+                this.nextAction();
+        });
+    }
+    stopCapturing() {
+        this.capturing = false;
+    }
+    get isCapturing() {
+        return this.capturing;
+    }
+    stopRunning() {
+        this.automated = false;
+        this.running   = false;
+    }
+    startRunning() {
+        this.automated = true;
+        this.running   = true;
+    }
+    get isRunning() {
+        return this.running;
+    }
+}
+
+
+// just helpers
+function decide(chance: number) {
+    return Math.random() <= chance;
+}
+function weightedDecide<T>(values: /** [value, weight] */ [T, number][]) {
+    const totalWeight = values.reduce((a, b) => a + b[1], 0);
+
+    let random = Math.random() * totalWeight;
+    for (const value of values) {
+        random -= value[1];
+        if (random <= 0)
+            return value[0];
+    }
+    return values[values.length - 1][0];
+}
