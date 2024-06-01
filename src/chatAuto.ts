@@ -134,10 +134,11 @@ export class AutoChat {
                 return;
 
             this.tree.moveNext(text, self);
+            
+            this.doNextAction();
 
             if (!self || (this.capturing && !this.running))
                 this.tree.currentNode.hits++;
-            this.doNextAction();
         });
     }
     async init() {
