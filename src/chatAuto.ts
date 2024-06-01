@@ -76,22 +76,14 @@ export class AutoChat {
         }
 
         // dead-end branch - exit from chat
-        if (this.leaving && decide(currentNode.deads / currentNode.hits)) {
+        if (this.leaving && !currentNode.self && decide(currentNode.deads / currentNode.hits)) {
             if (this.plugin.state.status === "in-active-chat")
                 this.plugin.state.exitChat();
             return;
         }
 
         const waitingHits = candidates.filter(c => !c.self).reduce((a, b) => a + b.hits, 0);
-        const messageHits = candidates.filter(c =>  c.self).reduce((a, b) => a + b.hits, 0);
-
-        // should be impossible
-        if (waitingHits + messageHits === 0) {
-            this.running   = false;
-            this.isStopped = true;
-            this.onStop.emit();
-            return;
-        }
+        const messageHits = candidates.filter(c =>  c.self).reduce((a, b) => a + b.hits, 0) + 1;
 
         if (decide(waitingHits / (waitingHits + messageHits))) {
             this.waitForMessage();
@@ -114,7 +106,7 @@ export class AutoChat {
     
 
     tree      : ChatTree;
-    maxDepth  = 5;
+    maxDepth  = 7;
     isStopped = false;
     onStop    = new Event();
 
