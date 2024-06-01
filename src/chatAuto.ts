@@ -6,16 +6,18 @@ import { Event       } from './event';
 export class AutoChat {
     private sendMessage() {
         if (!this.messaging) {
-            this.running = false;
-            this.onStopped.emit();
+            this.running   = false;
+            this.isStopped = true;
+            this.onStop.emit();
             return;
         }
         
         const candidates = this.tree.nextNodes.filter(c => c.self);
 
         if (candidates.length === 0) {
-            this.running = false;
-            this.onStopped.emit();
+            this.running   = false;
+            this.isStopped = true;
+            this.onStop.emit();
             return;
         }
 
@@ -67,8 +69,9 @@ export class AutoChat {
         const candidates  = this.tree.nextNodes;
 
         if (candidates.length === 0) {
-            this.running = false;
-            this.onStopped.emit();
+            this.running   = false;
+            this.isStopped = true;
+            this.onStop.emit();
             return;
         }
 
@@ -84,8 +87,9 @@ export class AutoChat {
 
         // should be impossible
         if (waitingHits + messageHits === 0) {
-            this.running = false;
-            this.onStopped.emit();
+            this.running   = false;
+            this.isStopped = true;
+            this.onStop.emit();
             return;
         }
 
@@ -110,15 +114,19 @@ export class AutoChat {
 
     tree      : ChatTree;
     maxDepth  = 5;
-    onStopped = new Event();
+    isStopped = false;
+    onStop    = new Event();
 
     constructor(profile: string, plugin: NektoPlugin) {
         this.tree   = new ChatTree(profile);
         this.plugin = plugin;
 
         plugin.onStateChanged.on(({ prev, curr }) => {
-            if (prev !== "chat-end-confirmation" && curr === "in-active-chat")
+            if (prev !== "chat-end-confirmation" && curr === "in-active-chat") {
+                this.running   = true;
+                this.isStopped = false;
                 this.tree.reset();
+            }
             if (curr === "chat-finished-by-self" && this.capturing && !this.running)
                 this.tree.currentNode.deads++;
         });
