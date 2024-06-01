@@ -108,6 +108,7 @@ export class AutoChat {
     capturing = true;
     messaging = false;
     leaving   = false;
+    skipping  = false;
 
     private plugin : NektoPlugin;
     
@@ -126,6 +127,12 @@ export class AutoChat {
                 this.running   = true;
                 this.isStopped = false;
                 this.tree.reset();
+            }
+            if (this.skipping) {
+                if (plugin.state.status === "chat-finished-by-self" || plugin.state.status === "chat-finished-by-nekto")
+                    plugin.state.nextChat();
+                if (plugin.state.status === "chat-end-confirmation")
+                    plugin.state.confirmExit();
             }
             if (curr === "chat-finished-by-self" && this.capturing && !this.running)
                 this.tree.currentNode.deads++;
