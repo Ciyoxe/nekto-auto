@@ -139,7 +139,7 @@ export class NektoPlugin {
     }
 
     /** Time in milliseconds between each update, null to disable */
-    updateTime     = 1000 as number | null;
+    updateTime     = 200 as number | null;
     state          = { status: null } as ChatState;
     messages       = [] as { text: string, self: boolean }[];
     isUserTyping   = false;
