@@ -7,9 +7,12 @@ async function main() {
     const automate = await new AutoChat(plugin).init();
     const ui       = new AutoUi();
     
-    if (plugin) {
-        plugin.onNewMessage.on(()=> {});
-    }
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "N" && e.altKey && e.ctrlKey) {
+            if (plugin.state.status === "in-active-chat")
+                plugin.state.exitChat();
+        }
+    })
 
     ui.onCapturingToggle
         .on((val) => automate.capturing = val);
