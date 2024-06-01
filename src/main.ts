@@ -51,27 +51,32 @@ async function main() {
                 ui.setStatus("В чате<br>Автоматический режим");
             }
         }
-        ui.setDebug(
-            automate.tree.nextNodes.map(node => {
-                const text = node.text.trim()
-                    .replaceAll("\n", " ")
-                    .replaceAll("\t", " ")
-                    .replaceAll("<", " ")
-                    .replaceAll(">", " ")
-                    .replaceAll("  ", " ")
-                    .substring(0, 50);
-
-                const factor = Math.round((node.deads / node.hits) * 255);
-                const style  = (node.hits === 0 || node.self) ?
-                    `color: rgb(255, 255, 255)` :
-                    document.body.classList.contains("night_theme") ?
-                        `color: rgb(${factor}, 200, ${255-factor});` :
-                        `color: rgb(${Math.round(factor * 0.8)}, 0, ${Math.round((255-factor) * 0.8)});`;
-                return `<span style="${style}">${text}</span>`;
-            })
-            .join("<br>"),
-        );
     }, 200);
+    setInterval(() => {
+        const elements = [] as string[];
+        automate.tree.nextNodes.forEach(node => {
+            const text = node.text.trim()
+                .replaceAll("\n", " ")
+                .replaceAll("\t", " ")
+                .replaceAll("<", " ")
+                .replaceAll(">", " ")
+                .replaceAll("  ", " ")
+                .substring(0, 30);
+
+            if (text.length === 0)
+                return;
+
+            const factor = Math.round((node.deads / node.hits) * 255);
+            const style  = (node.hits === 0 || node.self) ?
+                `color: rgb(255, 255, 255)` :
+                document.body.classList.contains("night_theme") ?
+                    `color: rgb(${factor}, 200, ${255-factor});` :
+                    `color: rgb(${Math.round(factor * 0.8)}, 0, ${Math.round((255-factor) * 0.8)});`;
+            elements.push(`<span style="${style}">${text}</span>`);
+        })
+
+        ui.setDebug(elements.join("<br>"));
+    }, 1000);
 };
 
 try {
