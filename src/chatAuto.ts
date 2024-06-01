@@ -21,7 +21,7 @@ export class AutoChat {
 
         const text = weightedDecide(candidates.map(c => [c.text, c.hits]));
 
-        if (this.plugin.state.status === "in-active-chat")
+        if (this.plugin.state.status === "in-active-chat" && text !== null)
             this.plugin.state.sendMessage(text);
     }
     private waitForMessage() {
@@ -125,7 +125,7 @@ export class AutoChat {
         plugin.onNewMessage.on(({ text, self }) => {
             if (this.tree.depth > this.maxDepth)
                 return;
-            
+
             this.tree.moveNext(text, self);
 
             if (this.capturing && !this.running)
@@ -143,11 +143,14 @@ function decide(chance: number) {
 function weightedDecide<T>(values: /** [value, weight] */ [T, number][]) {
     const totalWeight = values.reduce((a, b) => a + b[1], 0);
 
+    if (totalWeight === 0)
+        return null;
+
     let random = Math.random() * totalWeight;
     for (const value of values) {
         random -= value[1];
         if (random <= 0)
             return value[0];
     }
-    return values[values.length - 1][0];
+    return null;
 }
