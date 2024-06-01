@@ -118,8 +118,8 @@ export class AutoChat {
     isStopped = false;
     onStop    = new Event();
 
-    constructor(profile: string, plugin: NektoPlugin) {
-        this.tree   = new ChatTree(profile);
+    constructor(plugin: NektoPlugin) {
+        this.tree   = new ChatTree();
         this.plugin = plugin;
 
         plugin.onStateChanged.on(({ prev, curr }) => {
@@ -147,6 +147,10 @@ export class AutoChat {
                 this.tree.currentNode.hits++;
             this.doNextAction();
         });
+    }
+    async init() {
+        await  this.tree.loadTree();
+        return this;
     }
 }
 

@@ -1,4 +1,5 @@
-import { compress, decompress } from 'lz-string';
+import { fromBase64, toBase64 } from "@smithy/util-base64";
+
 type ChatNode = {
     self   : boolean,
     text   : string,
@@ -9,44 +10,31 @@ type ChatNode = {
 }
 
 export class ChatTree {
-    profile = "";
     nodes   = [] as ChatNode[];
     path    = [] as ChatNode[];
 
-    constructor(profile: string, autosaveInterval = 30_000) {
-        this.loadTree(profile, []);
-        
+    constructor(autosaveInterval = 30_000) {
         if (autosaveInterval) {
             setInterval(() => this.saveTree(), autosaveInterval);
         }
     }
 
     saveTree() {
-        localStorage.setItem(`nekto-auto-chatTree-${this.profile}`, compress(JSON.stringify({ nodes: this.nodes })));
+        compress(JSON.stringify({ nodes: this.nodes }))
+        .then(
+            data => localStorage.setItem(`nekto-auto-chatTree`, data)
+        );
     }
-    loadTree(profileName: string, conversation: { text: string, self: boolean }[]) {
-        try {
-            const tree = JSON.parse(decompress(localStorage.getItem(`nekto-auto-chatTree-${profileName}`)!));
-            this.nodes = tree.nodes;
-        }
-        catch {
+    async loadTree() {
+        const data = localStorage.getItem(`nekto-auto-chatTree`);
+
+        if (data) {
+            this.nodes = JSON.parse(await decompress(data)).nodes;
+        } else {
             this.nodes = [];
         }
+    }
 
-        this.path.length = 0;
-        for (const message of conversation) {
-            this.moveNext(message.text, message.self);
-        }
-
-        this.profile = profileName;
-    }
-    deleteSave(profileName: string) {
-        localStorage.removeItem(`nekto-auto-chatTree-${profileName}`);
-    }
-    renameSave(oldName: string, newName: string) {
-        localStorage.setItem(`nekto-auto-chatTree-${newName}`, localStorage.getItem(`nekto-auto-chatTree-${oldName}`)!);
-        localStorage.removeItem(`nekto-auto-chatTree-${oldName}`);
-    }
     /** moves to next node in conversation or creates new */
     moveNext(text: string, self: boolean) {
         const nextNodes = this.nextNodes;
@@ -82,4 +70,27 @@ export class ChatTree {
     get depth() {
         return this.path.length;
     }
+}
+
+async function compress(str: string) {
+    const encoder = new TextEncoder();
+    const data    = encoder.encode(str);
+    const cstream = new CompressionStream("deflate-raw");
+    const writer  = cstream.writable.getWriter();
+
+    writer.write(data);
+    writer.close();
+
+    const bytes = new Uint8Array(await new Response(cstream.readable).arrayBuffer());
+    return toBase64(bytes);
+}
+
+async function decompress(str: string) {
+    const bytes   = fromBase64(str).buffer;
+    const dstream = new DecompressionStream("deflate-raw");
+    const writer  = dstream.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    return await new Response(dstream.readable).text();
 }
