@@ -135,7 +135,7 @@ export class AutoChat {
 
             this.tree.moveNext(text, self);
 
-            if (this.capturing && !this.running)
+            if (!self || (this.capturing && !this.running))
                 this.tree.currentNode.hits++;
             this.doNextAction();
         });

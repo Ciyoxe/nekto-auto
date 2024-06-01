@@ -2,7 +2,7 @@ import { Event } from './event';
 
 export class AutoUi {
     private updatePosition() {
-        const main = document.querySelector(".chat-box");
+        const main = document.querySelector(".chat-box.col-xs-12");
 
         if (main) {
             const mainRect = main.getBoundingClientRect();
@@ -38,14 +38,14 @@ export class AutoUi {
         this.ui.style.gap           = "10px";
 
         this.ui.innerHTML = `
-        <button id="autoui-capturing"   class="btn btn-default checked">Запись действий \u2713</button>
-        <button id="autoui-leaving"    class="btn btn-default">Завершение чатов \u2717</button>
-        <button id="autoui-messaging"  class="btn btn-default">Отправка сообщений \u2717</button>
-        <button id="autoui-skipping" class="btn btn-default">Переключение чатов \u2717</button>
+        <button id="autoui-capturing" class="btn btn-default checked">Запись действий \u2713</button>
+        <button id="autoui-leaving"   class="btn btn-default">Завершение чатов \u2717</button>
+        <button id="autoui-messaging" class="btn btn-default">Отправка сообщений \u2717</button>
+        <button id="autoui-skipping"  class="btn btn-default">Переключение чатов \u2717</button>
         <br>
         <div id="autoui-status"></div>
         <br>
-        <div id="autoui-debug" style="overflow-y: scroll"></div>
+        <div id="autoui-debug" style="overflow-y: scroll; background: #0002; border-radius: 4px; padding: 4px; height: 100%;"></div>
         `;
 
         document.body.appendChild(this.ui);

@@ -53,9 +53,21 @@ async function main() {
         }
         ui.setDebug(
             automate.tree.nextNodes.map(node => {
+                const text = node.text.trim()
+                    .replaceAll("\n", " ")
+                    .replaceAll("\t", " ")
+                    .replaceAll("<", " ")
+                    .replaceAll(">", " ")
+                    .replaceAll("  ", " ")
+                    .substring(0, 50);
+
                 const factor = Math.round((node.deads / node.hits) * 255);
-                const style  = `color: rgb(${factor}, ${128}, ${255-factor})`;
-                return `<span style="${style}">${node.text.substring(0, 50)}</span>`;
+                const style  = (node.hits === 0 || node.self) ?
+                    `color: rgb(255, 255, 255)` :
+                    document.body.classList.contains("night_theme") ?
+                        `color: rgb(${factor}, 200, ${255-factor});` :
+                        `color: rgb(${Math.round(factor * 0.8)}, 0, ${Math.round((255-factor) * 0.8)});`;
+                return `<span style="${style}">${text}</span>`;
             })
             .join("<br>"),
         );
