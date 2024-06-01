@@ -5,7 +5,7 @@ import { Event       } from './event';
 
 export class AutoChat {
     private sendMessage() {
-        if (!this.automated) {
+        if (!this.messaging) {
             this.running = false;
             this.onStopped.emit();
             return;
@@ -62,13 +62,7 @@ export class AutoChat {
                 finish();
         }, 100);
     }
-    private nextAction() {
-        if (!this.automated) {
-            this.running = false;
-            this.onStopped.emit();
-            return;
-        }
-
+    private doNextAction() {
         const currentNode = this.tree.currentNode;
         const candidates  = this.tree.nextNodes;
 
@@ -79,7 +73,7 @@ export class AutoChat {
         }
 
         // dead-end branch - exit from chat
-        if (decide(currentNode.deads / currentNode.hits)) {
+        if (this.leaving && decide(currentNode.deads / currentNode.hits)) {
             if (this.plugin.state.status === "in-active-chat")
                 this.plugin.state.exitChat();
             return;
@@ -107,8 +101,9 @@ export class AutoChat {
     private running = false;
 
     // user settings
-    private capturing = true;
-    private automated = false;
+    capturing = true;
+    messaging = false;
+    leaving   = false;
 
     private plugin : NektoPlugin;
     
@@ -128,30 +123,15 @@ export class AutoChat {
                 this.tree.currentNode.deads++;
         });
         plugin.onNewMessage.on(({ text, self }) => {
+            if (this.tree.depth > this.maxDepth)
+                return;
+            
             this.tree.moveNext(text, self);
 
             if (this.capturing && !this.running)
                 this.tree.currentNode.hits++;
-            if (this.automated)
-                this.nextAction();
+            this.doNextAction();
         });
-    }
-    stopCapturing() {
-        this.capturing = false;
-    }
-    get isCapturing() {
-        return this.capturing;
-    }
-    stopRunning() {
-        this.automated = false;
-        this.running   = false;
-    }
-    startRunning() {
-        this.automated = true;
-        this.running   = true;
-    }
-    get isRunning() {
-        return this.running;
     }
 }
 
