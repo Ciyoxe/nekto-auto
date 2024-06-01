@@ -8,11 +8,12 @@ async function main() {
     const ui       = new AutoUi();
     
     document.addEventListener("keydown", (e) => {
-        if (e.key === "N" && e.altKey && e.ctrlKey) {
+        if (e.code === "KeyN" && e.altKey && e.ctrlKey) {
             if (plugin.state.status === "in-active-chat")
                 plugin.state.exitChat();
         }
     })
+    setInterval(() => document.dispatchEvent(new MouseEvent("mousemove")), 200);
 
     ui.onCapturingToggle
         .on((val) => automate.capturing = val);
