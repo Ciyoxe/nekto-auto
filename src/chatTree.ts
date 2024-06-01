@@ -1,4 +1,3 @@
-import { fromBase64, toBase64 } from "@smithy/util-base64";
 
 type ChatNode = {
     self   : boolean,
@@ -20,17 +19,14 @@ export class ChatTree {
     }
 
     saveTree() {
-        compress(JSON.stringify({ nodes: this.nodes }))
-        .then(
-            data => localStorage.setItem(`nekto-auto-chatTree`, data)
-        );
+        localStorage.setItem(`nekto-auto-chatTree`, JSON.stringify({ nodes: this.nodes }));
     }
     async loadTree() {
         const data = localStorage.getItem(`nekto-auto-chatTree`);
-
-        if (data) {
-            this.nodes = JSON.parse(await decompress(data)).nodes;
-        } else {
+        try {
+            this.nodes = JSON.parse(data!).nodes;
+        }
+        catch {
             this.nodes = [];
         }
     }
@@ -70,27 +66,4 @@ export class ChatTree {
     get depth() {
         return this.path.length;
     }
-}
-
-async function compress(str: string) {
-    const encoder = new TextEncoder();
-    const data    = encoder.encode(str);
-    const cstream = new CompressionStream("deflate-raw");
-    const writer  = cstream.writable.getWriter();
-
-    writer.write(data);
-    writer.close();
-
-    const bytes = new Uint8Array(await new Response(cstream.readable).arrayBuffer());
-    return toBase64(bytes);
-}
-
-async function decompress(str: string) {
-    const bytes   = fromBase64(str).buffer;
-    const dstream = new DecompressionStream("deflate-raw");
-    const writer  = dstream.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
-
-    return await new Response(dstream.readable).text();
 }

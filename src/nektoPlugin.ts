@@ -169,7 +169,7 @@ function getMessages() {
     return messages;
 }
 function sendMessage(text: string) {
-    const inputBlock = document.querySelector<HTMLElement>(".input_block");
+    const inputBlock = document.querySelector<HTMLElement>(".emojionearea-editor");
     const sendButton = document.querySelector<HTMLElement>("#sendMessageBtn");
 
     if (inputBlock === null || sendButton === null) {
