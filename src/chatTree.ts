@@ -2,8 +2,7 @@
 type ChatNode = {
     self   : boolean,
     text   : string,
-    hits   : number,
-    deads  : number,
+    dead?  : true,
 
     children: ChatNode[],
 }

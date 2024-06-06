@@ -1,27 +1,20 @@
 import { NektoPlugin } from "./nektoPlugin";
 import { ChatTree    } from "./chatTree";
-import { Event       } from './event';
 
 
 export class AutoChat {
     private sendMessage() {
         if (!this.messaging) {
-            this.running   = false;
-            this.isStopped = true;
-            this.onStop.emit();
             return;
         }
         
         const candidates = this.tree.nextNodes.filter(c => c.self);
 
         if (candidates.length === 0) {
-            this.running   = false;
-            this.isStopped = true;
-            this.onStop.emit();
             return;
         }
 
-        const text = weightedDecide(candidates.map(c => [c.text, c.hits]));
+        const text = getOneOf(candidates.map(c => c.text));
 
         if (this.plugin.state.status === "in-active-chat" && text !== null)
             this.plugin.state.sendMessage(text);
@@ -68,22 +61,19 @@ export class AutoChat {
         const currentNode = this.tree.currentNode;
         const candidates  = this.tree.nextNodes;
 
-        if (candidates.length === 0) {
-            this.running   = false;
-            this.isStopped = true;
-            this.onStop.emit();
-            return;
-        }
-
         // dead-end branch - exit from chat
-        if (this.leaving && !currentNode.self && decide(currentNode.deads / currentNode.hits)) {
+        if (this.leaving && !currentNode.self && currentNode.dead) {
             if (this.plugin.state.status === "in-active-chat")
                 this.plugin.state.exitChat();
             return;
         }
 
-        const waitingHits = candidates.filter(c => !c.self).reduce((a, b) => a + b.hits, 0);
-        const messageHits = candidates.filter(c =>  c.self).reduce((a, b) => a + b.hits, 0) + 1;
+        if (candidates.length === 0) {
+            return;
+        }
+
+        const waitingHits = candidates.filter(c => !c.self).length;
+        const messageHits = candidates.filter(c =>  c.self).length + 1;
 
         if (decide(waitingHits / (waitingHits + messageHits))) {
             this.waitForMessage();
@@ -93,11 +83,7 @@ export class AutoChat {
         this.sendMessage();
     }
 
-    /** Is in automated mode now */
-    private running = false;
-
     // user settings
-    capturing = true;
     messaging = false;
     leaving   = false;
     skipping  = false;
@@ -108,37 +94,29 @@ export class AutoChat {
     tree      : ChatTree;
     maxDepth  = 7;
     isStopped = false;
-    onStop    = new Event();
 
     constructor(plugin: NektoPlugin) {
         this.tree   = new ChatTree();
         this.plugin = plugin;
 
         plugin.onStateChanged.on(({ prev, curr }) => {
-            if (prev !== "chat-end-confirmation" && curr === "in-active-chat") {
-                this.running   = true;
-                this.isStopped = false;
+            if (curr === "chat-finished-by-self")
+                this.tree.currentNode.dead = true;
+            if (prev !== "chat-end-confirmation" && curr === "in-active-chat")
                 this.tree.reset();
-            }
             if (this.skipping) {
                 if (plugin.state.status === "chat-finished-by-self" || plugin.state.status === "chat-finished-by-nekto")
                     plugin.state.nextChat();
                 if (plugin.state.status === "chat-end-confirmation")
                     plugin.state.confirmExit();
             }
-            if (curr === "chat-finished-by-self" && this.capturing && !this.running)
-                this.tree.currentNode.deads++;
         });
         plugin.onNewMessage.on(({ text, self }) => {
             if (this.tree.depth > this.maxDepth)
                 return;
 
             this.tree.moveNext(text, self);
-            
             this.doNextAction();
-
-            if (!self || (this.capturing && !this.running))
-                this.tree.currentNode.hits++;
         });
     }
     async init() {
@@ -152,17 +130,6 @@ export class AutoChat {
 function decide(chance: number) {
     return Math.random() <= chance;
 }
-function weightedDecide<T>(values: /** [value, weight] */ [T, number][]) {
-    const totalWeight = values.reduce((a, b) => a + b[1], 0);
-
-    if (totalWeight === 0)
-        return null;
-
-    let random = Math.random() * totalWeight;
-    for (const value of values) {
-        random -= value[1];
-        if (random <= 0)
-            return value[0];
-    }
-    return null;
+function getOneOf<T>(elems: T[]) {
+    return elems[Math.floor(Math.random() * elems.length)] ?? null;
 }

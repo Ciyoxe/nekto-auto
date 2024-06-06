@@ -15,8 +15,6 @@ async function main() {
     })
     setInterval(() => document.dispatchEvent(new MouseEvent("mousemove")), 200);
 
-    ui.onCapturingToggle
-        .on((val) => automate.capturing = val);
     ui.onLeavingToggle
         .on((val) => automate.leaving = val);
     ui.onMessagingToggle
@@ -70,13 +68,12 @@ async function main() {
             if (text.length === 0)
                 return;
 
-            const factor = Math.round((node.deads / node.hits) * 255);
-            const style  = (node.hits === 0 || node.self) ?
-                `color: rgb(255, 255, 255)` :
-                document.body.classList.contains("night_theme") ?
-                    `color: rgb(${factor}, 200, ${255-factor});` :
-                    `color: rgb(${Math.round(factor * 0.8)}, 0, ${Math.round((255-factor) * 0.8)});`;
-            elements.push(`<span style="${style}">${text}</span>`);
+            const dark  = document.body.classList.contains("night_theme");
+            const color = node.dead ?
+                (dark ? "red" : "darkred") :
+                (dark ? "green" : "darkgreen");
+                
+            elements.push(`<span style="color: ${color}">${text}</span>`);
         })
 
         ui.setDebug(elements.join("<br>"));

@@ -13,7 +13,6 @@ export class AutoUi {
         }
     }
 
-    onCapturingToggle = new Event<boolean>();
     onLeavingToggle   = new Event<boolean>();
     onMessagingToggle = new Event<boolean>();
     onSkippingToggle  = new Event<boolean>();
@@ -38,7 +37,6 @@ export class AutoUi {
         this.ui.style.gap           = "10px";
 
         this.ui.innerHTML = `
-        <button id="autoui-capturing" class="btn btn-default checked">Запись действий \u2713</button>
         <button id="autoui-leaving"   class="btn btn-default">Завершение чатов \u2717</button>
         <button id="autoui-messaging" class="btn btn-default">Отправка сообщений \u2717</button>
         <button id="autoui-skipping"  class="btn btn-default">Переключение чатов \u2717</button>
@@ -50,19 +48,6 @@ export class AutoUi {
 
         document.body.appendChild(this.ui);
 
-        this.ui.querySelector<HTMLElement>("#autoui-capturing")!.onclick = (ev) => {
-            const element = ev.target as HTMLElement;
-
-            if (element.classList.contains("checked")) {
-                element.textContent = "Запись действий \u2717";
-                element.classList.remove("checked");
-                this.onCapturingToggle.emit(false);
-            } else {
-                element.textContent = "Запись действий \u2713";
-                element.classList.add("checked");
-                this.onCapturingToggle.emit(true);
-            }
-        }
         this.ui.querySelector<HTMLElement>("#autoui-leaving")!.onclick = (ev) => {
             const element = ev.target as HTMLElement;
 
