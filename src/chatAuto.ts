@@ -101,7 +101,8 @@ export class AutoChat {
 
         plugin.onStateChanged.on(({ prev, curr }) => {
             if (curr === "chat-finished-by-self")
-                this.tree.currentNode.dead = true;
+                if (this.tree.currentNode)
+                    this.tree.currentNode.dead = true;
             if (prev !== "chat-end-confirmation" && curr === "in-active-chat")
                 this.tree.reset();
             if (this.skipping) {
