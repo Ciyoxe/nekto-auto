@@ -101,7 +101,7 @@ export class AutoChat {
 
         plugin.onStateChanged.on(({ prev, curr }) => {
             if (curr === "chat-finished-by-self")
-                if (this.tree.currentNode)
+                if (this.tree.currentNode && this.tree.depth < this.maxDepth)
                     this.tree.currentNode.dead = true;
             if (prev !== "chat-end-confirmation" && curr === "in-active-chat")
                 this.tree.reset();
@@ -113,7 +113,7 @@ export class AutoChat {
             }
         });
         plugin.onNewMessage.on(({ text, self }) => {
-            if (this.tree.depth > this.maxDepth)
+            if (this.tree.depth >= this.maxDepth)
                 return;
 
             this.tree.moveNext(text, self);
