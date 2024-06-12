@@ -12,6 +12,7 @@ export class ChatTree {
     path    = [] as ChatNode[];
 
     constructor(autosaveInterval = 30_000) {
+        this.loadTree();
         if (autosaveInterval) {
             setInterval(() => this.saveTree(), autosaveInterval);
         }
@@ -20,7 +21,7 @@ export class ChatTree {
     saveTree() {
         localStorage.setItem(`nekto-auto-chatTree`, JSON.stringify({ nodes: this.nodes }));
     }
-    async loadTree() {
+    loadTree() {
         const data = localStorage.getItem(`nekto-auto-chatTree`);
         try {
             this.nodes = JSON.parse(data!).nodes;
@@ -44,8 +45,6 @@ export class ChatTree {
         const newNode = {
             self,
             text,
-            hits : 0,
-            deads: 0,
             children: [],
         }
         nextNodes.push(newNode);
