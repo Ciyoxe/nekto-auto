@@ -89,11 +89,9 @@ export class AutoChat {
     skipping  = false;
 
     private plugin : NektoPlugin;
-    
 
     tree      : ChatTree;
     maxDepth  = 7;
-    isStopped = false;
 
     constructor(plugin: NektoPlugin) {
         this.tree   = new ChatTree();
@@ -116,7 +114,17 @@ export class AutoChat {
             if (this.tree.depth >= this.maxDepth)
                 return;
 
-            this.tree.moveNext(text, self);
+            this.tree.moveNext(
+                text.toLowerCase()
+                    .replaceAll("\n", " ")
+                    .replaceAll("\t", " ")
+                    .replaceAll("<", " ")
+                    .replaceAll(">", " ")
+                    .replaceAll("  ", " ")
+                    .trim()
+                    .substring(0, 256),
+                self
+            );
             this.doNextAction();
         });
     }

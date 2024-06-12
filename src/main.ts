@@ -1,18 +1,14 @@
-import { AutoUi      } from "./ui";
-import { AutoChat    } from "./chatAuto";
-import { NektoPlugin } from "./nektoPlugin";
+import { AutoUi        } from "./ui";
+import { AutoChat      } from "./chatAuto";
+import { NektoPlugin   } from "./nektoPlugin";
+import { ThemeProvider } from "./theme";
 
 async function main() {
     const plugin   = new NektoPlugin();
     const automate = new AutoChat(plugin);
     const ui       = new AutoUi();
+    const theme    = new ThemeProvider();
     
-    document.addEventListener("keydown", (e) => {
-        if (e.code === "KeyN" && e.altKey && e.ctrlKey) {
-            if (plugin.state.status === "in-active-chat")
-                plugin.state.exitChat();
-        }
-    })
     setInterval(() => document.dispatchEvent(new MouseEvent("mousemove")), 200);
 
     ui.onLeavingToggle
@@ -21,6 +17,8 @@ async function main() {
         .on((val) => automate.messaging = val);
     ui.onSkippingToggle
         .on((val) => automate.skipping = val);
+    ui.onThemeToggle
+        .on((val) => val ? theme.setheme() : theme.removeTheme());
     
     plugin.onStateChanged.on(({ curr })=> {
         switch (curr) {
@@ -43,35 +41,33 @@ async function main() {
             case "in-active-chat":
                 ui.setStatus("В чате");
                 break;
+            default:
+                ui.setStatus("");
+                break;
         }
     });
     setInterval(() => {
-        if (plugin.status === "in-active-chat") {
-            if (automate.isStopped) {
-                ui.setStatus("В чате");
-            } else {
-                ui.setStatus("В чате<br>Автоматический режим");
-            }
-        }
-    }, 200);
-    setInterval(() => {
         const elements = [] as string[];
         automate.tree.nextNodes.forEach(node => {
-            const text = node.text.trim()
+            const text = node.text
                 .replaceAll("\n", " ")
                 .replaceAll("\t", " ")
                 .replaceAll("<", " ")
                 .replaceAll(">", " ")
                 .replaceAll("  ", " ")
+                .trim()
                 .substring(0, 30);
 
             if (text.length === 0)
                 return;
 
             const dark  = document.body.classList.contains("night_theme");
-            const color = node.dead ?
-                (dark ? "red" : "darkred") :
-                (dark ? "green" : "darkgreen");
+            const color = 
+                node.self ?
+                    (dark ? "#8caaee" : "darkblue") :
+                node.dead ?
+                    (dark ? "#e78284" : "darkred") :
+                    (dark ? "#a6d189" : "darkgreen");
                 
             elements.push(`<span style="color: ${color}">${text}</span>`);
         })
