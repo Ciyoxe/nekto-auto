@@ -9,6 +9,7 @@ export type ChatStatus =
     | "chat-end-confirmation"
     | "in-params-menu"
     | "in-queue-waiting";
+
 export type ChatState = 
   | {
     status: null,
@@ -41,66 +42,15 @@ export type ChatState =
 
 
 export class NektoPlugin {
-    private updateStatus() {
-        const currStatus = getStatus();
-        const prevStatus = this.state.status;
+    private updateState() {
+        const currState = getState();
+        const prevState = this.state;
 
-        if (currStatus === prevStatus)
-            return;
-
-        switch (currStatus) {
-            case "captcha-solving":
-                this.state = {
-                    status: "captcha-solving",
-                };
-                break;
-            case "in-params-menu":
-                this.state = {
-                    status: "in-params-menu",
-                    startChat,
-                }
-                break;
-            case "in-queue-waiting":
-                this.state = {
-                    status: "in-queue-waiting",
-                    exitQueue,
-                }
-                break;
-            case "chat-end-confirmation":
-                this.state = {
-                    status: "chat-end-confirmation",
-                    confirmExit,
-                    cancelExit,
-                }
-                break;
-            case "in-active-chat":
-                this.state = {
-                    status  : "in-active-chat",
-                    sendMessage,
-                    exitChat,
-                }
-                break;
-            case "chat-finished-by-nekto":
-                this.state = {
-                    status: "chat-finished-by-nekto",
-                    exitToMenu,
-                    nextChat,
-                }
-                break;
-            case "chat-finished-by-self":
-                this.state = {
-                    status: "chat-finished-by-self",
-                    exitToMenu,
-                    nextChat,
-                }
-                break;
-            default:
-                this.state = { status: null }
+        if (currState.status !== prevState.status) {
+            this.state = currState;
+            this.onStateChanged.emit({ prev: prevState.status, curr: currState.status });
         }
-
-        this.onStateChanged.emit({ prev: prevStatus, curr: currStatus });
     }
-
     private updateMessages() {
         const newMessages = getMessages();
 
@@ -111,7 +61,6 @@ export class NektoPlugin {
             }
         }
     }
-
     private updateTyping() {
         const isTyping = isUserTyping();
 
@@ -119,23 +68,6 @@ export class NektoPlugin {
             this.isUserTyping = isTyping;
             this.onUserTyping.emit(isTyping);
         }
-    }
-    
-    private init() {
-        this.onStateChanged.on(({ prev, curr }) => {
-            if (curr === "in-active-chat" && prev !== "chat-end-confirmation")
-                this.messages.length = 0;
-        })
-
-        const update = ()=> {
-            this.updateTyping();
-            this.updateStatus();
-            this.updateMessages();
-
-            if (this.updateTime !== null)
-                setTimeout(update, this.updateTime);
-        };
-        update();
     }
 
     /** Time in milliseconds between each update, null to disable */
@@ -149,7 +81,20 @@ export class NektoPlugin {
     onUserTyping   = new Event<boolean>();
     
     constructor() {
-        this.init();
+        this.onStateChanged.on(({ prev, curr }) => {
+            if (curr === "in-active-chat" && prev !== "chat-end-confirmation")
+                this.messages.length = 0;
+        })
+
+        const update = ()=> {
+            this.updateTyping();
+            this.updateState();
+            this.updateMessages();
+
+            if (this.updateTime !== null)
+                setTimeout(update, this.updateTime);
+        };
+        update();
     }
 
     get status() { return this.state.status; }
@@ -236,17 +181,32 @@ function exitQueue() {
     }
     button.click();
 }
-function getStatus() {
+function getState(): ChatState {
     const mask_block = document.querySelector<HTMLElement>("#mask_cap");
-    if (mask_block !== null && mask_block.style.display !== "none")
-        return "captcha-solving";
-
-    if (document.querySelector(".mainStep.chat-box") !== null)
-        return "in-params-menu";
-    if (document.querySelector("#search_company_loading") !== null)
-        return "in-queue-waiting";
-    if (document.querySelector(".swal2-popup") !== null)
-        return "chat-end-confirmation";
+    if (mask_block !== null && mask_block.style.display !== "none") {
+        return {
+            status: "captcha-solving"
+        };
+    }
+    if (document.querySelector(".mainStep.chat-box") !== null) {
+        return {
+            status: "in-params-menu",
+            startChat,
+        };
+    }
+    if (document.querySelector("#search_company_loading") !== null) {
+        return {
+            status: "in-queue-waiting",
+            exitQueue
+        };
+    }
+    if (document.querySelector(".swal2-popup") !== null) {
+        return {
+            status: "chat-end-confirmation",
+            confirmExit,
+            cancelExit
+        };
+    }
 
     if (document.querySelector(".chat_step") !== null) {
         const endStatus = document.querySelector<HTMLElement>(".status-end");
@@ -254,15 +214,31 @@ function getStatus() {
         if (endStatus !== null && endStatus.style.display !== "none") {
             const overlay = document.querySelector(".talk_over_text");
 
-            if (overlay !== null && overlay.textContent?.startsWith("Собеседник завершил чат"))
-                return "chat-finished-by-nekto";
-            else
-                return "chat-finished-by-self";
+            if (overlay !== null && overlay.textContent?.startsWith("Собеседник завершил чат")) {
+                return {
+                    status: "chat-finished-by-nekto",
+                    exitToMenu,
+                    nextChat,
+                };
+            }
+            else {
+                return {
+                    status: "chat-finished-by-self",
+                    exitToMenu,
+                    nextChat,
+                };
+            };
         }
-        return "in-active-chat";
+        return {
+            status: "in-active-chat",
+            sendMessage,
+            exitChat,
+        };
     }
 
-    return null;
+    return {
+        status: null,
+    };
 }
 function isUserTyping() {
     const marker = document.querySelector<HTMLElement>(".window_chat_dialog_write span");
