@@ -4,7 +4,7 @@ import { NektoPlugin } from "./nektoPlugin";
 
 async function main() {
     const plugin   = new NektoPlugin();
-    const automate = await new AutoChat(plugin).init();
+    const automate = new AutoChat(plugin);
     const ui       = new AutoUi();
     
     document.addEventListener("keydown", (e) => {

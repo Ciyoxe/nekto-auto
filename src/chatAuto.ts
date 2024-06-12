@@ -120,10 +120,6 @@ export class AutoChat {
             this.doNextAction();
         });
     }
-    async init() {
-        await  this.tree.loadTree();
-        return this;
-    }
 }
 
 
