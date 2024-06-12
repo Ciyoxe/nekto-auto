@@ -3,22 +3,6 @@ import { ChatTree    } from "./chatTree";
 
 
 export class AutoChat {
-    private sendMessage() {
-        if (!this.messaging) {
-            return;
-        }
-        
-        const candidates = this.tree.nextNodes.filter(c => c.self);
-
-        if (candidates.length === 0) {
-            return;
-        }
-
-        const text = getOneOf(candidates.map(c => c.text));
-
-        if (this.plugin.state.status === "in-active-chat" && text !== null)
-            this.plugin.state.sendMessage(text);
-    }
     private waitForMessage() {
         const minWaitLimit =  2_000;
         const maxWaitLimit = 10_000;
@@ -127,6 +111,22 @@ export class AutoChat {
             );
             this.doNextAction();
         });
+    }
+    sendMessage() {
+        if (!this.messaging) {
+            return;
+        }
+        
+        const candidates = this.tree.nextNodes.filter(c => c.self);
+
+        if (candidates.length === 0) {
+            return;
+        }
+
+        const text = getOneOf(candidates.map(c => c.text));
+
+        if (this.plugin.state.status === "in-active-chat" && text !== null)
+            this.plugin.state.sendMessage(text);
     }
 }
 

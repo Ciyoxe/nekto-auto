@@ -43,6 +43,7 @@ export class AutoUi {
         <button id="autoui-leaving"   class="btn btn-default">Завершение чатов \u2717</button>
         <button id="autoui-messaging" class="btn btn-default">Отправка сообщений \u2717</button>
         <button id="autoui-skipping"  class="btn btn-default">Переключение чатов \u2717</button>
+        <button id="autoui-hotkeys"   class="btn btn-default">Хоткеи \u2717</button>
         <button id="autoui-theme"     class="btn btn-default">Темная тема \u2717</button>
         <br>
         <div id="autoui-status"></div>
@@ -61,8 +62,17 @@ export class AutoUi {
             this.onSkippingToggle.emit(toggleBtn(ev, "Переключение чатов"));
         }
         this.ui.querySelector<HTMLElement>("#autoui-theme")!.onclick = (ev) => {
-            this.onThemeToggle.emit(toggleBtn(ev, "Тема"));
+            this.onThemeToggle.emit(toggleBtn(ev, "Темная тема"));
         }
+        this.ui.querySelector<HTMLElement>("#autoui-hotkeys")!.onclick = (ev) => {
+            this.onHotkeysToggle.emit(toggleBtn(ev, "Хоткеи"));
+        }
+
+        this.ui.querySelector<HTMLElement>("#autoui-hotkeys")!.title = `
+        ➡ - Завершить чат
+        ⬆ - Откатить сохранение
+        ⬇ - Написать первым
+        `;
 
         setInterval(() => this.updatePosition(), 1000);
     }

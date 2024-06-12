@@ -2,12 +2,14 @@ import { AutoUi        } from "./ui";
 import { AutoChat      } from "./chatAuto";
 import { NektoPlugin   } from "./nektoPlugin";
 import { ThemeProvider } from "./theme";
+import { HotkeyMgr     } from "./hotkeys";
 
 async function main() {
     const plugin   = new NektoPlugin();
     const automate = new AutoChat(plugin);
     const ui       = new AutoUi();
     const theme    = new ThemeProvider();
+    const hotkeys  = new HotkeyMgr(plugin, automate);
     
     setInterval(() => document.dispatchEvent(new MouseEvent("mousemove")), 200);
 
@@ -19,6 +21,8 @@ async function main() {
         .on((val) => automate.skipping = val);
     ui.onThemeToggle
         .on((val) => val ? theme.setheme() : theme.removeTheme());
+    ui.onHotkeysToggle
+        .on((val) => hotkeys.enabled = val);
     
     plugin.onStateChanged.on(({ curr })=> {
         switch (curr) {

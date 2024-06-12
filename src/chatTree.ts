@@ -8,14 +8,32 @@ type ChatNode = {
 }
 
 export class ChatTree {
-    nodes   = [] as ChatNode[];
-    path    = [] as ChatNode[];
+    // for autosaving, one checkpoint every 10 seconds
+    // null if there was no changes in tree since last checkpoint
+    checkpoints = [] as (string | null)[];
+    wasChanges  = false;
 
-    constructor(autosaveInterval = 30_000) {
-        this.loadTree();
-        if (autosaveInterval) {
-            setInterval(() => this.saveTree(), autosaveInterval);
+    private saveCheckpoint() {
+        // first checkpoint should be saved even if there was no changes
+        if (this.pathValid && (this.wasChanges || this.checkpoints.length === 0)) {
+            this.wasChanges = false;
+            this.checkpoints.push(JSON.stringify(this.nodes));
+        } else {
+            this.checkpoints.push(null);
         }
+        // 10 minutes - max time for restoring
+        if (this.checkpoints.length > 60)
+            this.checkpoints.shift();
+    }
+
+    nodes     = [] as ChatNode[];
+    path      = [] as ChatNode[];
+    pathValid = false;
+
+    constructor() {
+        this.loadTree();
+        setInterval(()=> this.saveTree(), 30_000);
+        setInterval(()=> this.saveCheckpoint(), 10_000);
     }
 
     saveTree() {
@@ -29,8 +47,24 @@ export class ChatTree {
         catch {
             this.nodes = [];
         }
+        this.wasChanges = true;
     }
 
+    /** restore state of tree that was timeMs ago, maximum 10 minutes */
+    restoreCheckpoint(timeMs: number) {
+        const indexFromEnd  = Math.min(this.checkpoints.length - 1, Math.round(timeMs / 10_000));
+        const checkpointIdx = this.checkpoints.length - 1 - indexFromEnd;
+        
+        for (let i = checkpointIdx; i >= 0; i--) {
+            if (this.checkpoints[i] !== null) {
+                this.nodes       = JSON.parse(this.checkpoints[i]!);
+                this.checkpoints = [];
+                this.pathValid   = false; // invalidate current chat
+                this.saveTree();
+                return;
+            }
+        }
+    }
     /** moves to next node in conversation or creates new */
     moveNext(text: string, self: boolean) {
         const nextNodes = this.nextNodes;
@@ -49,9 +83,11 @@ export class ChatTree {
         }
         nextNodes.push(newNode);
         this.path.push(newNode);
+        this.wasChanges = true;
     }
     reset() {
         this.path.length = 0;
+        this.pathValid   = true;
     }
 
     get currentNode() {
