@@ -15,7 +15,7 @@ export class ChatTree {
 
     private saveCheckpoint() {
         // first checkpoint should be saved even if there was no changes
-        if (this.pathValid && (this.wasChanges || this.checkpoints.length === 0)) {
+        if (this.wasChanges || this.checkpoints.length === 0) {
             this.wasChanges = false;
             this.checkpoints.push(JSON.stringify(this.nodes));
         } else {
@@ -26,9 +26,8 @@ export class ChatTree {
             this.checkpoints.shift();
     }
 
-    nodes     = [] as ChatNode[];
-    path      = [] as ChatNode[];
-    pathValid = false;
+    nodes = [] as ChatNode[];
+    path  = [] as ChatNode[];
 
     constructor() {
         this.loadTree();
@@ -57,9 +56,10 @@ export class ChatTree {
         
         for (let i = checkpointIdx; i >= 0; i--) {
             if (this.checkpoints[i] !== null) {
+                console.log("RESTORED CHECKPOINT", strDiff(JSON.stringify(this.nodes), this.checkpoints[i]!));
+
                 this.nodes       = JSON.parse(this.checkpoints[i]!);
                 this.checkpoints = [];
-                this.pathValid   = false; // invalidate current chat
                 this.saveTree();
                 return;
             }
@@ -87,7 +87,6 @@ export class ChatTree {
     }
     reset() {
         this.path.length = 0;
-        this.pathValid   = true;
     }
 
     get currentNode() {
@@ -100,4 +99,27 @@ export class ChatTree {
     get depth() {
         return this.path.length;
     }
+}
+
+function strDiff(s1: string, s2: string) {
+    const target = s1.length > s2.length ? s1 : s2;
+    const source = s1.length > s2.length ? s2 : s1;
+
+    let start = 0;
+    let end   = target.length - 1;
+    
+    for (let i = 0; i < source.length; i++) {
+        if (target[i] !== source[i]) {
+            start = i;
+            break;
+        }
+    }
+    for (let i = 0; i < source.length; i++) {
+        if (target[target.length - 1 - i] !== source[source.length - 1 - i]) {
+            end = target.length - 1 - i;
+            break;
+        }
+    }
+
+    return target.slice(start, end + 1);
 }
