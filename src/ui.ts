@@ -69,9 +69,9 @@ export class AutoUi {
         }
 
         this.ui.querySelector<HTMLElement>("#autoui-hotkeys")!.title = `
-        ➡ - Завершить чат
-        ⬆ - Откатить сохранение
-        ⬇ - Написать первым
+        ctrl + ➡ - Завершить чат
+        ctrl + ⬆ - Откатить сохранение
+        ctrl + ⬇ - Написать первым
         `;
 
         setInterval(() => this.updatePosition(), 1000);
