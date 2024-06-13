@@ -99,6 +99,8 @@ export class AutoChat {
                 return;
 
             this.tree.moveNext(
+                self ?
+                text :
                 text.toLowerCase()
                     .replaceAll("\n", " ")
                     .replaceAll("\t", " ")
