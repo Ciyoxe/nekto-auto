@@ -23,6 +23,19 @@ async function main() {
         .on((val) => val ? theme.setheme() : theme.removeTheme());
     ui.onHotkeysToggle
         .on((val) => hotkeys.enabled = val);
+    ui.onDataAccess
+        .on(() => {
+            const data     = JSON.stringify(automate.tree.nodes);
+            const modified = prompt("Данные всех чатов:", data);
+            if (modified) {
+                try {
+                    automate.tree.data = JSON.parse(modified);
+                }
+                catch {
+                    alert("Неверные данные");
+                }
+            } 
+        });
     
     plugin.onStateChanged.on(({ curr })=> {
         switch (curr) {

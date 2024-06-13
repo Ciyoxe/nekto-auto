@@ -99,6 +99,10 @@ export class ChatTree {
     get depth() {
         return this.path.length;
     }
+    set data(nodes: ChatNode[]) {
+        this.nodes      = nodes;
+        this.wasChanges = true;
+    }
 }
 
 function strDiff(s1: string, s2: string) {

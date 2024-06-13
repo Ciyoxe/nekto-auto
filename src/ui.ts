@@ -18,6 +18,7 @@ export class AutoUi {
     onSkippingToggle  = new Event<boolean>();
     onHotkeysToggle   = new Event<boolean>();
     onThemeToggle     = new Event<boolean>();
+    onDataAccess      = new Event();
     
     ui: HTMLElement;
 
@@ -45,6 +46,7 @@ export class AutoUi {
         <button id="autoui-skipping"  class="btn btn-default">Переключение чатов \u2717</button>
         <button id="autoui-hotkeys"   class="btn btn-default">Хоткеи \u2717</button>
         <button id="autoui-theme"     class="btn btn-default">Темная тема \u2717</button>
+        <button id="autoui-data"      class="btn btn-default">Данные чатов</button>
         <br>
         <div id="autoui-status"></div>
         <br>
@@ -67,6 +69,9 @@ export class AutoUi {
         this.ui.querySelector<HTMLElement>("#autoui-hotkeys")!.onclick = (ev) => {
             this.onHotkeysToggle.emit(toggleBtn(ev, "Хоткеи"));
         }
+        this.ui.querySelector<HTMLElement>("#autoui-data")!.onclick = () => {
+            this.onDataAccess.emit();
+        };
 
         this.ui.querySelector<HTMLElement>("#autoui-hotkeys")!.title = `
         ctrl + ➡ - Завершить чат
